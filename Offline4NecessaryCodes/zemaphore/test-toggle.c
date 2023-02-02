@@ -6,9 +6,12 @@
 #include <signal.h>
 #include <wait.h>
 #include <pthread.h>
+#include "zemaphore.h"
 
 #define NUM_THREADS 3
 #define NUM_ITER 10
+
+zem_t threads[NUM_THREADS];
 
 void *justprint(void *data)
 {
@@ -16,7 +19,9 @@ void *justprint(void *data)
 
   for(int i=0; i < NUM_ITER; i++)
     {
+      zem_down(&threads[thread_id]);
       printf("This is thread %d\n", thread_id);
+      zem_up(&threads[(thread_id+1)%NUM_THREADS]);
     }
   return 0;
 }
@@ -31,8 +36,11 @@ int main(int argc, char *argv[])
   for(int i =0; i < NUM_THREADS; i++)
     {
       mythread_id[i] = i;
+      zem_init(&threads[i], 0);
       pthread_create(&mythreads[i], NULL, justprint, (void *)&mythread_id[i]);
     }
+
+  zem_up(&threads[0]);
   
   for(int i =0; i < NUM_THREADS; i++)
     {
