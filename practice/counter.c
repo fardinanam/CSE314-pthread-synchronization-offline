@@ -16,9 +16,9 @@ int main(int argc, char *argv) {
             printf("\nThread can't be created");
     }
 
-    // for (int i = 0; i < 10; i++) {
-    //     pthread_join(tid[i], NULL);
-    // }
+    for (int i = 0; i < 10; i++) {
+        pthread_join(tid[i], NULL);
+    }
 
     printf("%d\n", counter);
     return 0;
