@@ -12,8 +12,8 @@ int total_items, max_buf_size, num_workers, num_masters;
 
 int *buffer;
 
-pthread_mutex_t *m;
-pthread_cond_t *empty, *fill;
+pthread_mutex_t *lock;
+pthread_cond_t *empty_cond, *fill_cond;
 
 void print_produced(int num, int master) {
 
@@ -39,10 +39,10 @@ void *generate_requests_loop(void *data)
       break;
     }
 
-    pthread_mutex_lock(m);
+    pthread_mutex_lock(lock);
 
     while (curr_buf_size == max_buf_size){
-      pthread_cond_wait(empty, m);
+      pthread_cond_wait(empty_cond, lock);
     }
 
     // it's required to check again if all the items have been produced
@@ -52,16 +52,16 @@ void *generate_requests_loop(void *data)
     // produced it. So, without checking it again before producing might 
     // cause producing more items than expected.
     if (item_to_produce >= total_items) {
-      pthread_mutex_unlock(m);
+      pthread_mutex_unlock(lock);
       return 0;
     }
 
     buffer[curr_buf_size++] = item_to_produce;
     print_produced(item_to_produce, thread_id);
     item_to_produce++;
-    pthread_cond_signal(fill);
+    pthread_cond_signal(fill_cond);
 
-    pthread_mutex_unlock(m);
+    pthread_mutex_unlock(lock);
   }
   return 0;
 }
@@ -76,7 +76,7 @@ void *remove_requests_loop(void *data)
     if (item_to_produce >= total_items && curr_buf_size == 0) 
       break;
     
-    pthread_mutex_lock(m);
+    pthread_mutex_lock(lock);
 
     while (curr_buf_size == 0) {
       // It is required to check if all the items have already been produced
@@ -84,18 +84,18 @@ void *remove_requests_loop(void *data)
       // consumer will wait forever for a producer to produce something
       // while there is nothing left to produce. 
       if (item_to_produce >= total_items) {
-        pthread_mutex_unlock(m);
+        pthread_mutex_unlock(lock);
         return 0;
       }
 
-      pthread_cond_wait(fill, m);
+      pthread_cond_wait(fill_cond, lock);
     }
     
     int item_to_consume = buffer[--curr_buf_size];
     print_consumed(item_to_consume, thread_id);
-    pthread_cond_signal(empty);
+    pthread_cond_signal(empty_cond);
 
-    pthread_mutex_unlock(m);
+    pthread_mutex_unlock(lock);
   }
 
   return 0;
@@ -125,9 +125,9 @@ int main(int argc, char *argv[])
   buffer = (int *)malloc (sizeof(int) * max_buf_size);
 
   // create mutex and csv instances
-  m = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-  empty = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
-  fill = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+  lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+  empty_cond = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+  fill_cond = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
 
   //create master producer threads
   master_thread_id = (int *)malloc(sizeof(int) * num_masters);
@@ -165,9 +165,9 @@ int main(int argc, char *argv[])
   free(master_thread);
   free(worker_thread_id);
   free(master_thread_id);
-  free(m);
-  free(empty);
-  free(fill);
+  free(lock);
+  free(empty_cond);
+  free(fill_cond);
   
   return 0;
 }
