@@ -4,7 +4,7 @@
 
 using namespace std;
 
-long index;
+long idx;
 long *readerAcquireTime;
 long *readerReleaseTime;
 long *writerAcquireTime;
@@ -18,19 +18,20 @@ void *Reader(void* arg)
 	int threadNUmber = *((int *)arg);
 
 	// Occupying the Lock
+	// printf("Reader: %d is trying to acquire the lock\n", threadNUmber);
 	ReaderLock(&rwlock);
 
 	pthread_spin_lock(&spinlock);
-	readerAcquireTime[threadNUmber] = index;
-	index++;
+	readerAcquireTime[threadNUmber] = idx;
+	idx++;
 	pthread_spin_unlock(&spinlock);
 
 	// printf("Reader: %d has acquired the lock\n", threadNUmber);
 	usleep(100000);
 
 	pthread_spin_lock(&spinlock);
-	readerReleaseTime[threadNUmber] = index;
-	index++;
+	readerReleaseTime[threadNUmber] = idx;
+	idx++;
 	pthread_spin_unlock(&spinlock);
 
 	// Releasing the Lock
@@ -43,19 +44,20 @@ void *Writer(void* arg)
 	int threadNUmber = *((int *)arg);
 
   // Occupying the Lock
+	// printf("Writer: %d is trying to acquire the lock\n",threadNUmber);
 	WriterLock(&rwlock);
 
 	pthread_spin_lock(&spinlock);
-	writerAcquireTime[threadNUmber] = index;
-	index++;
+	writerAcquireTime[threadNUmber] = idx;
+	idx++;
 	pthread_spin_unlock(&spinlock);
 
 	// printf("Writer: %d has acquired the lock\n",threadNUmber);
-  usleep(100000);
+  	usleep(100000);
 
 	pthread_spin_lock(&spinlock);
-	writerReleaseTime[threadNUmber] = index;
-	index++;
+	writerReleaseTime[threadNUmber] = idx;
+	idx++;
 	pthread_spin_unlock(&spinlock);
 
 	// Releasing the Lock
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
 	read_num_threads = atoi(argv[1]);
 	write_num_threads = atoi(argv[2]);
 
-	index = 0;
+	idx = 0;
 	readerAcquireTime = new long[read_num_threads*2];
 	readerReleaseTime = new long[read_num_threads*2];
 	writerAcquireTime = new long[write_num_threads];
