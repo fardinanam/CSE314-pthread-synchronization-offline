@@ -35,22 +35,17 @@ void *generate_requests_loop(void *data)
 
   while(1)
   {
-    if(item_to_produce >= total_items) {
-      break;
-    }
-
     pthread_mutex_lock(lock);
 
     while (curr_buf_size == max_buf_size){
       pthread_cond_wait(empty_cond, lock);
     }
 
-    // it's required to check again if all the items have been produced
+    // it's required to check if all the items have been produced
     // after lock has been acquired because, it might happen that 
-    // the first if statement has been passed when there is only one item
-    // to produce. But while waiting for mutex lock, a producer has already
+    // while waiting for mutex lock, a producer has already
     // produced it. So, without checking it again before producing might 
-    // cause producing more items than expected.
+    // result in producing more items than expected.
     if (item_to_produce >= total_items) {
       pthread_mutex_unlock(lock);
       return 0;
@@ -59,7 +54,7 @@ void *generate_requests_loop(void *data)
     buffer[curr_buf_size++] = item_to_produce;
     print_produced(item_to_produce, thread_id);
     item_to_produce++;
-    pthread_cond_signal(fill_cond);
+    pthread_cond_broadcast(fill_cond);
 
     pthread_mutex_unlock(lock);
   }
@@ -72,10 +67,7 @@ void *remove_requests_loop(void *data)
 {
   int thread_id = *((int *)data);
   
-  while (1) {
-    if (item_to_produce >= total_items && curr_buf_size == 0) 
-      break;
-    
+  while (1) {    
     pthread_mutex_lock(lock);
 
     while (curr_buf_size == 0) {
@@ -93,7 +85,7 @@ void *remove_requests_loop(void *data)
     
     int item_to_consume = buffer[--curr_buf_size];
     print_consumed(item_to_consume, thread_id);
-    pthread_cond_signal(empty_cond);
+    pthread_cond_broadcast(empty_cond);
 
     pthread_mutex_unlock(lock);
   }
