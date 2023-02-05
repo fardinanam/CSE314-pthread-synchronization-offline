@@ -2,6 +2,8 @@
 
 void InitalizeReadWriteLock(struct read_write_lock * rw) {
   rw->reader_count = 0;
+  pthread_mutex_init(&rw->reader_count_lock, NULL);
+  pthread_mutex_init(&rw->rwlock, NULL);
 }
 
 void ReaderLock(struct read_write_lock * rw) {

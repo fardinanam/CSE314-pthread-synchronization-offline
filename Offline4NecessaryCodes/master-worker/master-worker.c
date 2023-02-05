@@ -54,7 +54,7 @@ void *generate_requests_loop(void *data)
     buffer[curr_buf_size++] = item_to_produce;
     print_produced(item_to_produce, thread_id);
     item_to_produce++;
-    pthread_cond_broadcast(fill_cond);
+    pthread_cond_signal(fill_cond);
 
     pthread_mutex_unlock(lock);
   }
@@ -85,7 +85,7 @@ void *remove_requests_loop(void *data)
     
     int item_to_consume = buffer[--curr_buf_size];
     print_consumed(item_to_consume, thread_id);
-    pthread_cond_broadcast(empty_cond);
+    pthread_cond_signal(empty_cond);
 
     pthread_mutex_unlock(lock);
   }
@@ -120,6 +120,10 @@ int main(int argc, char *argv[])
   lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
   empty_cond = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
   fill_cond = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+
+  pthread_mutex_init(lock, NULL);
+  pthread_cond_init(empty_cond, NULL);
+  pthread_cond_init(fill_cond, NULL);
 
   //create master producer threads
   master_thread_id = (int *)malloc(sizeof(int) * num_masters);
