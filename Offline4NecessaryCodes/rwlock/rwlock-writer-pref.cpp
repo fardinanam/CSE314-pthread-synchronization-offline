@@ -13,7 +13,7 @@ void ReaderLock(struct read_write_lock * rw) {
   } 
   pthread_mutex_unlock(&rw->writer_count_lock);
   
-  // acquire the lock if no other readers are reading
+  // acquire the lock if no other reader is reading
   // otherwise, just increment the reader count assuming
   // the lock is already acquired
   pthread_mutex_lock(&rw->reader_count_lock);
